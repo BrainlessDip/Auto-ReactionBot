@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 Token = os.getenv("Token")
-Bot = AsyncTeleBot(Token,colorful_logs=True)
+Bot = AsyncTeleBot(Token)
 
 # Define log directory
 log_dir = 'logs'
