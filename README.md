@@ -1,12 +1,12 @@
-# Auto Reactor Bot (Telegram)
+# Auto ReactorBot
 
 #### Project Status: <span style="color:#12b886">Active<span>
 
 ## Overview
-This bot automatically reacts to messages in your Telegram group. Contributions for new features are welcome.
+This bot automatically reacts to messages in your Telegram group, allowing you to customize reaction for each user Contributions for new features are welcome!
 
 ## Usage Instructions
-1. Add `@AutoReactionRoBot` to your Telegram group.
+1. Add [@AutoReactionRoBot](https://t.me/AutoReactionRoBot) to your Telegram group.
 2. The bot is now ready to use. Enjoy!
 
 ## Commands
@@ -15,21 +15,22 @@ The bot supports the following commands:
 - `/start`: Displays a welcome message and provides a link to the support chat.
 - `/stats`: Shows statistics about the bot, including total users, groups, and reactions.
 - `/create @Username {reaction}`: Sets an automatic reaction for a user.
+    - **Alias**: cr
     - **Usage**:
         - Non-Reply: `/create @Username {reaction}`
         - Reply: `/create {reaction}`
 - `/edit @Username {newReaction}`: Updates the automatic reaction for a user.
     - **Usage**:
         - `/edit @Username {newReaction [leave blank for settings panel]}`
-- `/reactions`: Lists all available reactions.
-- `/view`: Displays the automatic reactions set for the group.
+- `/reactions`: Lists all available reactions
+- `/view`: Displays the automatic reactions set for the group
 
 ## Requirements for the `/create` Command
 To use the `/create` command, ensure the following:
 1. The command is issued in a group or supergroup chat.
-2. The username starts with `@`.
-3. The reaction is a valid emoji from the predefined list of `validEmojis`.
-4. The user does not already have an automatic reaction set.
+2. The username starts with `@`
+3. The reaction is a valid emoji from the predefined list of `src/core/setUp.validEmojis`
+4. The user does not already have an automatic reaction set
 
 ## Hosting Instructions
 1. Clone the repository:
@@ -46,6 +47,15 @@ To use the `/create` command, ensure the following:
      ```sh
      python3 main.py
      ```
+
+## Database Schema  
+If `Database.db` does not exist or needs to be recreated, use the following command to import the schema:  
+
+```sh
+sqlite3 Database.db < db.schema
+```  
+
+For more details, check [this Stack Overflow post](https://stackoverflow.com/questions/18102976/how-to-create-a-db-file-in-sqlite3-using-a-schema-file)
 
 ## Support
 - Public Support Group: [AutoReactionSupport](https://t.me/AutoReactionSupport)

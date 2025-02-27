@@ -1,0 +1,8 @@
+CREATE TABLE `Groups` (`chatId` INTEGER,
+`Username` TEXT,
+`Reaction` TEXT,
+`mentionReaction` INTEGER,
+`mentionReactionBig` INTEGER,
+`replyReaction` INTEGER,
+`replyReactionBig` INTEGER);
+CREATE TABLE `Users` (`userId` INTEGER)
