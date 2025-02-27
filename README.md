@@ -20,10 +20,12 @@ The bot supports the following commands:
         - Non-Reply: `/create @Username {reaction}`
         - Reply: `/create {reaction}`
 - `/edit @Username {newReaction}`: Updates the automatic reaction for a user.
+    - **Alias**: ed 
     - **Usage**:
         - `/edit @Username {newReaction [leave blank for settings panel]}`
 - `/reactions`: Lists all available reactions
 - `/view`: Displays the automatic reactions set for the group
+- `/help`: Displays the help menu
 
 ## Requirements for the `/create` Command
 To use the `/create` command, ensure the following:
