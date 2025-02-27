@@ -12,7 +12,7 @@ logging.info(f"Added {__name__}")
 async def editReaction(message):
     """Handles editing automatic reactions for users in groups."""
     if message.chat.type not in ['group', 'supergroup']:
-        return await Bot.reply_to(message, "Group only")
+        return await Bot.reply_to(message, "This command is intended for groups only")
 
     chatId = message.chat.id
     args = telebot.util.extract_arguments(message.text).split()

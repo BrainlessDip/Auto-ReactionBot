@@ -69,7 +69,7 @@ async def generatePageButtons(reactions, current_page,userId):
 @Bot.message_handler(commands=['view'])
 async def view(message):
     if message.chat.type not in ['group', 'supergroup']:
-        return await Bot.reply_to(message, "Group only")
+        return await Bot.reply_to(message, "This command is intended for groups only")
     
     chatId = message.chat.id
     reactions = await checkGroupReactions(chatId)

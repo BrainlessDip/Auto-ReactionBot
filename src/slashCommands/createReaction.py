@@ -10,7 +10,7 @@ logging.info(f"Added {__name__}")
 async def createReaction(message):
     """Handles the creation of automatic reactions for users in groups."""
     if message.chat.type not in ['group', 'supergroup']:
-        return await Bot.reply_to(message, "Group only")
+        return await Bot.reply_to(message, "This command is intended for groups only")
 
     usageMessage = "Usage\n```Non-Reply\n/create @Username {reaction}\n```\n```Reply\n/create {reaction}\n```"
     chatId = message.chat.id
