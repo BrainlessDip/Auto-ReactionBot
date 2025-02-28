@@ -26,6 +26,8 @@ The bot supports the following commands:
 - `/reactions`: Lists all available reactions
 - `/view`: Displays the automatic reactions set for the group
 - `/help`: Displays the help menu
+- `/delete`: Delete the reaction for a user
+  - Alias: del
 
 ## Requirements for the `/create` Command
 To use the `/create` command, ensure the following:

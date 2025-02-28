@@ -3,12 +3,14 @@ import telebot
 import emoji
 import aiosqlite
 from src.core.setUp import Bot, validEmojis
+from src.core.rateLimiter import rateLimiterCallback, rateLimiterMessage
 from src.core.Database import checkUsersGroup, checkUserInfo
 from telebot import types
 
 logging.info(f"Added {__name__}")
 
 @Bot.message_handler(commands=['edit','ed'])
+@rateLimiterMessage
 async def editReaction(message):
     """Handles editing automatic reactions for users in groups."""
     if message.chat.type not in ['group', 'supergroup']:
@@ -23,7 +25,7 @@ async def editReaction(message):
     userIsAdmin = any(admin.user.id == message.from_user.id for admin in chatAdmins)
 
     if not userIsAdmin:
-        return await Bot.reply_to(message, "You must be an admin to run this command.", parse_mode="Markdown")
+        return await Bot.reply_to(message, "You must be an admin to run this command", parse_mode="Markdown")
 
     # Case 1: No arguments provided
     if len(args) == 0:
@@ -81,7 +83,7 @@ async def editReaction(message):
         # Send the panel to change the reaction settings
         await sendReactionPanel(message,chatId, username, message.from_user.id)
 
-async def sendReactionPanel(message, chatId, username, userId, IsEdit=False,backButton=False,Page=1):
+async def sendReactionPanel(message, chatId, username, userId, IsEdit=False,Page=0):
     """Send a panel with buttons to change the reaction settings."""
     markup = types.InlineKeyboardMarkup(row_width=2)
 
@@ -90,6 +92,7 @@ async def sendReactionPanel(message, chatId, username, userId, IsEdit=False,back
     if not userData:
         return await Bot.reply_to(message, "No settings found for this user")
 
+    userEmoji = userData[2]
     # Define the settings map for user settings indices
     settingMap = {
         'mentionReaction': (3, "Mention Reaction"),
@@ -114,32 +117,39 @@ async def sendReactionPanel(message, chatId, username, userId, IsEdit=False,back
         # Split into separate rows
         
         if "mention" in settingName:  # Mention-related reactions
-            mentionButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{chatId}:{username}:{userId}"))
+            mentionButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{username}"))
         elif "reply" in settingName:  # Reply-related reactions
-            replyButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{chatId}:{username}:{userId}"))
+            replyButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{username}"))
 
     # Add Delete Button (separate row)
-    deleteButton = types.InlineKeyboardButton("❌ Delete Reaction", callback_data=f"Delete:{chatId}:{username}:{userId}")
-
+    deleteButton = types.InlineKeyboardButton("❌ Delete Reaction", callback_data=f"Delete:{username}:{userId}")
+    deleteMsgButton = types.InlineKeyboardButton("❌ Delete Message", callback_data=f"DeleteMsg:{userId}")
+    extraButtons = [deleteButton,deleteMsgButton]
     # Add mention and reply buttons to the markup (in separate rows)
     if mentionButtons:
         markup.add(*mentionButtons)
     if replyButtons:
         markup.add(*replyButtons)
-    markup.add(deleteButton)
-    if backButton:
-      markup.add(types.InlineKeyboardButton("Go Back", callback_data=f"jump:{Page}:{userId}"))
+    markup.add(*extraButtons)
+    markup.add(types.InlineKeyboardButton("Go Back", callback_data=f"Jump:{Page}:{userId}"))
 
     # Send or edit the panel with the status message and buttons
+    messageText = f"Select an option to change settings for {username}\nReaction: {userEmoji}"
     if IsEdit:
-      await Bot.edit_message_text(message.text, chat_id=message.chat.id, message_id=message.message_id, reply_markup=markup, parse_mode="Markdown")
+      await Bot.edit_message_text(messageText, chat_id=message.chat.id, message_id=message.message_id, reply_markup=markup, parse_mode="Markdown")
     else:
-      await Bot.reply_to(message, f"Select an option to change settings for {username}", reply_markup=markup, parse_mode="Markdown")
+      await Bot.reply_to(message, messageText, reply_markup=markup, parse_mode="Markdown")
 
 @Bot.callback_query_handler(func=lambda call: call.data.startswith("Toggle:"))
+@rateLimiterCallback
 async def handleToggle(call):
     """Handles the button clicks to Toggle the reaction settings."""
-    _, settingName, chatId, username, userId = call.data.split(':')
+    if call.message.reply_to_message:
+      userId = call.message.reply_to_message.from_user.id
+    else:
+     return await Bot.answer_callback_query(callback_query_id=call.id, text="Please verify that the reply to the message exists, or try running the command again", show_alert=True)
+    _, settingName, username = call.data.split(':')
+    chatId = call.message.chat.id
 
     # Ensure that the user who clicked the button is the one who issued the command
     if int(userId) != call.from_user.id:
@@ -199,10 +209,11 @@ async def updateReaction(chatId, username, newReaction):
         raise
  
 @Bot.callback_query_handler(func=lambda call: call.data.startswith("Delete:"))
+@rateLimiterCallback
 async def deleteReactionSettings(call):
     """Handles the deletion of reaction settings for a user."""
-    _, chatId, username, userId = call.data.split(':')
-
+    _, username, userId = call.data.split(':')
+    chatId = call.message.chat.id
     # Ensure that the user who clicked the button is the one who issued the command
     if int(userId) != call.from_user.id:
         return await Bot.answer_callback_query(call.id, "You cannot interact with this button", show_alert=True)
@@ -211,7 +222,14 @@ async def deleteReactionSettings(call):
     try:
         await deleteUserSettings(chatId, username)
         await Bot.answer_callback_query(call.id, f"Reaction settings for {username} deleted ❌",show_alert=True)
-        await Bot.delete_message(call.message.chat.id, call.message.message_id)
+        Messages = []
+        Messages.append(call.message.message_id)
+        if call.message.reply_to_message:
+          Messages.append(call.message.reply_to_message.message_id)
+        try:
+          return await Bot.delete_messages(call.message.chat.id , Messages)
+        except Exception:
+          return await Bot.delete_messages(call.message.chat.id, call.message.message_id)
     except Exception as e:
         logging.error(f"Error deleting reaction settings: {e}")
         await Bot.answer_callback_query(call.id, "An error occurred while deleting reaction settings")
@@ -232,3 +250,20 @@ async def deleteUserSettings(chatId, username):
     except Exception as e:
         logging.error(f"Error deleting user settings: {e}")
         raise
+
+@Bot.callback_query_handler(func=lambda call: call.data.startswith("DeleteMsg:"))
+@rateLimiterCallback
+async def deleteMessage(call):
+    """Handles the button clicks to Toggle the reaction settings."""
+    _, userId = call.data.split(':')
+    Messages = []
+    Messages.append(call.message.message_id)
+    if call.message.reply_to_message:
+      Messages.append(call.message.reply_to_message.message_id)
+    if int(userId) != call.from_user.id:
+      return await Bot.answer_callback_query(call.id, "You cannot interact with this button", show_alert=True)
+    else:
+      try:
+        return await Bot.delete_messages(call.message.chat.id , Messages)
+      except Exception as e:
+        return await Bot.answer_callback_query(call.id, str(e), show_alert=True)

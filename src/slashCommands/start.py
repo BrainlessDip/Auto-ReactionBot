@@ -2,11 +2,13 @@ import logging
 
 from telebot import types
 from src.core.setUp import Bot
+from src.core.rateLimiter import rateLimiterMessage
 from src.core import allUsers, handleUser
 
 logging.info(f"Added {__name__}")
 
 @Bot.message_handler(commands=['start'])
+@rateLimiterMessage
 async def Start(message):
    text = """
 Welcome to Auto Reaction Bot! 🤖

@@ -1,6 +1,9 @@
+
 import logging
 from telebot.types import Message
+from src.core.rateLimiter import rateLimiterMessage
 from src.core.setUp import Bot
+import difflib  # Built-in library for string matching
 
 logging.info(f"Added {__name__}")
 
@@ -16,6 +19,7 @@ Available commands:
 - `/edit @Username {newReaction}` : Updates the automatic reaction for a specified user.
 - `/reactions` : Lists all available reactions.
 - `/view` : Shows the automatic reactions configured for the group.
+- `/delete` : Delete the reaction for a user.
 
 For detailed information on a specific command, use `/help <command>`. Example: `/help create`
 """,
@@ -63,21 +67,63 @@ Usage:
 Usage:
 - `/view`: Shows the automatic reactions configured for the group.
 """,
+    "delete": """
+*Help for /delete command*
+
+Usage:
+- `/delete`: Delete the reaction for a user
+""",
     "error": "Invalid command. Use `/help` to see the list of available commands.",
-    "invalid_usage": "Invalid usage. Use `/help` to see the list of available commands"
+    "invalid": "Invalid usage. Use `/help` to see the list of available commands"
 }
+
 logging.info(f"Added {len(HELP_TEXT)} Help Menu")
+
+# Helper function to get available commands
+def getAvailableCommands():
+    return [key for key in HELP_TEXT.keys() if key not in {'invalid', 'default', 'error'}]
+
+# Helper function to predict the closest command
+def predictCommand(user_input, commands, cutoff=0.6):
+    """
+    Predicts the closest matching command using difflib.
+    :param user_input: The user's input command.
+    :param commands: List of available commands.
+    :param cutoff: Minimum similarity score to consider a match (0 to 1).
+    :return: The closest matching command or None if no match is found.
+    """
+    matches = difflib.get_close_matches(user_input, commands, n=1, cutoff=cutoff)
+    return matches[0] if matches else None
+
 @Bot.message_handler(commands=['help'])
+@rateLimiterMessage
 async def displayHelp(message: Message):
     args = message.text.split()
     
-    # Default to the general help text if no specific command is given
     if len(args) == 1:
+        # Show default help menu
         Text = HELP_TEXT["default"]
     elif len(args) == 2:
-        command = args[1].lower()
-        Text = HELP_TEXT.get(command, HELP_TEXT["error"])
+        # Show help for a specific command
+        user_input = args[1].lower()
+        available_commands = getAvailableCommands()
+        
+        # Check if the user input matches a command exactly
+        if user_input in available_commands:
+            Text = HELP_TEXT[user_input]
+        else:
+            # Try to predict the closest command
+            predictedCommand = predictCommand(user_input, available_commands)
+            if predictedCommand:
+                Text = f"\n\nDid you mean `/{predictedCommand}`?\n{HELP_TEXT[predictedCommand]}"
+            else:
+                Text = HELP_TEXT["error"]
+        
+        # Append available commands
+        Text += f"\n\nAvailable Commands:\n{', '.join(available_commands)}"
     else:
-        Text = HELP_TEXT["invalid_usage"]
+        # Handle invalid usage
+        Text = HELP_TEXT["invalid"]
+        Text += f"\n\nAvailable Commands:\n{', '.join(getAvailableCommands())}"
     
     await Bot.reply_to(message, Text, parse_mode="Markdown")
