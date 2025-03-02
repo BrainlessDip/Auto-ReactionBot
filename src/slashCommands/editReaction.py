@@ -18,7 +18,7 @@ async def editReaction(message):
 
     chatId = message.chat.id
     args = telebot.util.extract_arguments(message.text).split()
-    usageMessage = "Usage\n```\n/edit @Username {newReaction [leave blank for settings panel]}\n```"
+    usageMessage = "Usage\n```\n/edit Word {newReaction [leave blank for settings panel]}\n```"
 
     # Check if the user is an admin
     chatAdmins = await Bot.get_chat_administrators(chatId)
@@ -29,66 +29,58 @@ async def editReaction(message):
 
     # Case 1: No arguments provided
     if len(args) == 0:
-        username = None
+        word = None
         if message.reply_to_message:
             repliedUser = message.reply_to_message.from_user
             if not repliedUser or repliedUser.is_bot:
                 return await Bot.reply_to(message, f"*You can't set auto reaction for a bot*\n{usageMessage}", parse_mode="Markdown")
-            username = f"@{repliedUser.username}" if repliedUser.username else None
-        if not username:
-            return await Bot.reply_to(message, f"*Enter a valid username*\n{usageMessage}", parse_mode="Markdown")
+            word = f"@{repliedUser.username}" if repliedUser.username else None
+        if not word:
+            return await Bot.reply_to(message, f"*Enter a valid word*\n{usageMessage}", parse_mode="Markdown")
 
-        # Check if the username already has a reaction
-        addedUsernames = await checkUsersGroup(chatId)
-        if username not in addedUsernames:
-            return await Bot.reply_to(message, f"{username} doesn't have an auto reaction set", parse_mode="Markdown")
+        # Check if the word already has a reaction
+        addedWords = await checkUsersGroup(chatId)
+        if word not in addedWords:
+            return await Bot.reply_to(message, f"{word} doesn't have an auto reaction set", parse_mode="Markdown")
 
         # Send the panel to change the reaction settings
-        await sendReactionPanel(message,chatId, username, message.from_user.id)
+        await sendReactionPanel(message,chatId, word, message.from_user.id)
 
-    # Case 2: Two arguments provided (username and newReaction)
+    # Case 2: Two arguments provided (word and newReaction)
     elif len(args) == 2:
-        username, newReaction = args[0], args[1]
+        word, newReaction = args[0], args[1]
 
-        # Validate username
-        if not username.startswith("@"):
-            return await Bot.reply_to(message, f"*Enter a valid username*\n{usageMessage}", parse_mode="Markdown")
-
-        # Check if the username already has a reaction
-        addedUsernames = await checkUsersGroup(chatId)
-        if username not in addedUsernames:
-            return await Bot.reply_to(message, f"{username} doesn't have an auto reaction set", parse_mode="Markdown")
+        # Check if the word already has a reaction
+        addedWords = await checkUsersGroup(chatId)
+        if word not in addedWords:
+            return await Bot.reply_to(message, f"{word} doesn't have an auto reaction set", parse_mode="Markdown")
 
         # Validate new emoji
         if not emoji.is_emoji(newReaction) or newReaction not in validEmojis:
             return await Bot.reply_to(message, f"**Enter a valid emoji ( /reactions )**\n{usageMessage}", parse_mode="Markdown")
 
         # Update the reaction
-        await updateReaction(chatId, username, newReaction)
-        await Bot.reply_to(message, f"Reaction for {username} updated to {newReaction}!")
+        await updateReaction(chatId, word, newReaction)
+        await Bot.reply_to(message, f"Reaction for {word} updated to {newReaction}!")
 
-    # Case 3: One argument provided (only username)
+    # Case 3: One argument provided (only word)
     elif len(args) == 1:
-        username = args[0]
+        word = args[0]
 
-        # Validate username
-        if not username.startswith("@"):
-            return await Bot.reply_to(message, f"*Enter a valid username*\n{usageMessage}", parse_mode="Markdown")
-
-        # Check if the username already has a reaction
-        addedUsernames = await checkUsersGroup(chatId)
-        if username not in addedUsernames:
-            return await Bot.reply_to(message, f"{username} doesn't have an auto reaction set", parse_mode="Markdown")
+        # Check if the word already has a reaction
+        addedWords = await checkUsersGroup(chatId)
+        if word not in addedWords:
+            return await Bot.reply_to(message, f"{word} doesn't have an auto reaction set", parse_mode="Markdown")
 
         # Send the panel to change the reaction settings
-        await sendReactionPanel(message,chatId, username, message.from_user.id)
+        await sendReactionPanel(message,chatId, word, message.from_user.id)
 
-async def sendReactionPanel(message, chatId, username, userId, IsEdit=False,Page=0):
+async def sendReactionPanel(message, chatId, word, userId, IsEdit=False,Page=0):
     """Send a panel with buttons to change the reaction settings."""
     markup = types.InlineKeyboardMarkup(row_width=2)
 
     # Fetch current settings for the user
-    userData = await checkUserInfo(chatId, username)
+    userData = await checkUserInfo(chatId, word)
     if not userData:
         return await Bot.reply_to(message, "No settings found for this user")
 
@@ -117,24 +109,24 @@ async def sendReactionPanel(message, chatId, username, userId, IsEdit=False,Page
         # Split into separate rows
         
         if "mention" in settingName:  # Mention-related reactions
-            mentionButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{username}"))
+            mentionButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{word}"))
         elif "reply" in settingName:  # Reply-related reactions
-            replyButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{username}"))
+            replyButtons.append(types.InlineKeyboardButton(f"{emoji} {displayName}", callback_data=f"Toggle:{settingName}:{word}"))
 
     # Add Delete Button (separate row)
-    deleteButton = types.InlineKeyboardButton("❌ Delete Reaction", callback_data=f"Delete:{username}:{userId}")
+    deleteButton = types.InlineKeyboardButton("❌ Delete Reaction", callback_data=f"Delete:{word}:{userId}")
     deleteMsgButton = types.InlineKeyboardButton("❌ Delete Message", callback_data=f"DeleteMsg:{userId}")
     extraButtons = [deleteButton,deleteMsgButton]
     # Add mention and reply buttons to the markup (in separate rows)
     if mentionButtons:
-        markup.add(*mentionButtons)
-    if replyButtons:
-        markup.add(*replyButtons)
+       markup.add(*mentionButtons)
+    if replyButtons and word.startswith('@'):
+       markup.add(*replyButtons)
     markup.add(*extraButtons)
     markup.add(types.InlineKeyboardButton("Go Back", callback_data=f"Jump:{Page}:{userId}"))
 
     # Send or edit the panel with the status message and buttons
-    messageText = f"Select an option to change settings for {username}\nReaction: {userEmoji}"
+    messageText = f"Select an option to change settings for `{word}`\nReaction: {userEmoji}"
     if IsEdit:
       await Bot.edit_message_text(messageText, chat_id=message.chat.id, message_id=message.message_id, reply_markup=markup, parse_mode="Markdown")
     else:
@@ -148,7 +140,7 @@ async def handleToggle(call):
       userId = call.message.reply_to_message.from_user.id
     else:
      return await Bot.answer_callback_query(callback_query_id=call.id, text="Please verify that the reply to the message exists, or try running the command again", show_alert=True)
-    _, settingName, username = call.data.split(':')
+    _, settingName, word = call.data.split(':')
     chatId = call.message.chat.id
 
     # Ensure that the user who clicked the button is the one who issued the command
@@ -156,9 +148,9 @@ async def handleToggle(call):
         return await Bot.answer_callback_query(call.id, "You cannot interact with this button", show_alert=True)
 
     # Fetch current settings for the user
-    userData = await checkUserInfo(chatId, username)
+    userData = await checkUserInfo(chatId, word)
     if not userData:
-       return await Bot.answer_callback_query(call.id, f"{username} doesn't have an auto reaction set",show_alert=True)
+       return await Bot.answer_callback_query(call.id, f"{word} doesn't have an auto reaction set",show_alert=True)
 
     settingMap = {
         'mentionReaction': (3, "Mention Reaction"),
@@ -173,35 +165,35 @@ async def handleToggle(call):
     newValue = 0 if currentValue else 1
 
     # Update the setting in the database
-    await updateUserSetting(chatId, username, settingName, newValue)
+    await updateUserSetting(chatId, word, settingName, newValue)
     
     settingName = settingMap.get(settingName)[1]
     # Update the callback query message
-    await Bot.answer_callback_query(call.id, f"{settingName} for {username} {'Enabled ✅' if newValue else 'Disabled ❌'}")
-    await sendReactionPanel(call.message,chatId, username, userId,IsEdit=True)
+    await Bot.answer_callback_query(call.id, f"{settingName} for {word} {'Enabled ✅' if newValue else 'Disabled ❌'}")
+    await sendReactionPanel(call.message,chatId, word, userId,IsEdit=True)
 
-async def updateUserSetting(chatId, username, settingIndex, newValue):
+async def updateUserSetting(chatId, word, settingIndex, newValue):
     """Update a specific setting in the user's data."""
     query = f"""
     UPDATE `Groups`
     SET `{settingIndex}` = ?
-    WHERE `chatId` = ? AND `Username` = ?
+    WHERE `chatId` = ? AND `Word` = ?
     """
     async with aiosqlite.connect('Database.db') as db:
-        await db.execute(query, (newValue, chatId, username))
+        await db.execute(query, (newValue, chatId, word))
         await db.commit()
         await db.close()
 
-async def updateReaction(chatId, username, newReaction):
+async def updateReaction(chatId, word, newReaction):
     """Updates the reaction configuration in the database."""
     query = """
     UPDATE `Groups`
     SET `Reaction` = ?
-    WHERE `chatId` = ? AND `Username` = ?
+    WHERE `chatId` = ? AND `Word` = ?
     """
     try:
         async with aiosqlite.connect('Database.db') as db:
-            await db.execute(query, (newReaction, chatId, username))
+            await db.execute(query, (newReaction, chatId, word))
             await db.commit()
             await db.close()
     except Exception as e:
@@ -212,7 +204,7 @@ async def updateReaction(chatId, username, newReaction):
 @rateLimiterCallback
 async def deleteReactionSettings(call):
     """Handles the deletion of reaction settings for a user."""
-    _, username, userId = call.data.split(':')
+    _, word, userId = call.data.split(':')
     chatId = call.message.chat.id
     # Ensure that the user who clicked the button is the one who issued the command
     if int(userId) != call.from_user.id:
@@ -220,8 +212,8 @@ async def deleteReactionSettings(call):
 
     # Delete the reaction settings from the database
     try:
-        await deleteUserSettings(chatId, username)
-        await Bot.answer_callback_query(call.id, f"Reaction settings for {username} deleted ❌",show_alert=True)
+        await deleteUserSettings(chatId, word)
+        await Bot.answer_callback_query(call.id, f"Reaction settings for {word} deleted ❌",show_alert=True)
         Messages = []
         Messages.append(call.message.message_id)
         if call.message.reply_to_message:
@@ -234,16 +226,16 @@ async def deleteReactionSettings(call):
         logging.error(f"Error deleting reaction settings: {e}")
         await Bot.answer_callback_query(call.id, "An error occurred while deleting reaction settings")
 
-async def deleteUserSettings(chatId, username):
+async def deleteUserSettings(chatId, word):
     """Deletes the user's settings from the database."""
     query = """
     DELETE FROM `Groups`
-    WHERE `chatId` = ? AND `Username` = ?
+    WHERE `chatId` = ? AND `Word` = ?
     """
     try:
       async with aiosqlite.connect('Database.db') as db:
        cursor = await db.cursor()
-       await cursor.execute(query, (chatId, username))
+       await cursor.execute(query, (chatId, word))
        await cursor.close()
        await db.commit()
        await db.close()

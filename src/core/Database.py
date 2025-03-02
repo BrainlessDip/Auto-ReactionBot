@@ -21,7 +21,7 @@ async def ReadDB(Name):
 async def checkUsersGroup(chatId):
    async with aiosqlite.connect('Database.db') as db:
      cursor = await db.cursor()
-     await cursor.execute(f"SELECT `Username` FROM 'Groups' WHERE `chatId` = {chatId}")
+     await cursor.execute(f"SELECT `Word` FROM 'Groups' WHERE `chatId` = {chatId}")
      Users = [row[0] for row in await cursor.fetchall()]
      await cursor.close()
      await db.close()
@@ -29,15 +29,15 @@ async def checkUsersGroup(chatId):
 
 async def checkGroupReactions(chatId):
     async with aiosqlite.connect('Database.db') as db:
-      async with db.execute("SELECT `Username`, `Reaction`, `mentionReaction`, `replyReaction` FROM 'Groups' WHERE `chatId` = ?", (chatId,)) as cursor:
+      async with db.execute("SELECT `Word`, `Reaction`, `mentionReaction`, `replyReaction` FROM 'Groups' WHERE `chatId` = ?", (chatId,)) as cursor:
         Users = [(row[0], row[1], row[2], row[3]) for row in await cursor.fetchall()]
     await db.close()
     return Users
 
-async def checkUserInfo(chatId,Username):
+async def checkUserInfo(chatId, Word):
    async with aiosqlite.connect('Database.db') as db:
      cursor = await db.cursor()
-     await cursor.execute("SELECT * FROM `Groups` WHERE `chatId` = ? AND `Username` = ?", (chatId, Username))
+     await cursor.execute("SELECT * FROM `Groups` WHERE `chatId` = ? AND `Word` = ?", (chatId, Word))
      User = await cursor.fetchall()
      User = User[0] if User else []
      await cursor.close()

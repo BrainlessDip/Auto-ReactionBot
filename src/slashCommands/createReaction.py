@@ -15,7 +15,7 @@ async def createReaction(message):
     if message.chat.type not in ['group', 'supergroup']:
         return await Bot.reply_to(message, "This command is intended for groups only")
     
-    usageMessage = "Usage\n```Non-Reply\n/create @Username {reaction}\n```\n```Reply\n/create {reaction}\n```"
+    usageMessage = "Usage\n```Non-Reply\n/create @Username {reaction}\n```\n```Text\n/create Text {reaction}\n```\n```Reply\n/create {reaction}\n```"
     chatId = message.chat.id
     args = telebot.util.extract_arguments(message.text).split()
      
@@ -27,42 +27,46 @@ async def createReaction(message):
        return await Bot.reply_to(message, "You must be an admin to run this command", parse_mode="Markdown")
     
     # Determine username and reaction based on arguments and reply
-    username, reaction = None, None
+    word, reaction = None, None
     if len(args) >= 2:
-        username, reaction = args[0], args[1]
-        if username.lower().endswith('bot'):
-          return await Bot.reply_to(message, f"*You can't set auto reaction for a bot*\n{usageMessage}", parse_mode="Markdown")
+        word, reaction = args[0], args[1]
     elif len(args) == 1 and message.reply_to_message:
       reaction = args[0]
       repliedUser = message.reply_to_message.from_user
       if not repliedUser or repliedUser.is_bot:
         return await Bot.reply_to(message, f"*You can't set auto reaction for a bot*\n{usageMessage}", parse_mode="Markdown")
-      username = f"@{repliedUser.username}" if repliedUser.username else None
+      word = f"@{repliedUser.username}" if repliedUser.username else None
 
     # Validate inputs
-    if not username or not username.startswith("@"):
-        return await Bot.reply_to(message, f"*Enter a valid username*\n{usageMessage}", parse_mode="Markdown")
+    if not word or ":" in word:
+       return await Bot.reply_to(message, f"*Enter a valid username or word*\n{usageMessage}", parse_mode="Markdown")
+    
+    if len(word) > 10:
+       return await Bot.reply_to(message, f"*Max word length: 10*\nWord: `{word}` ({len(word)})", parse_mode="Markdown")
     
     if reaction not in validEmojis:
         return await Bot.reply_to(message, f"**Enter a valid emoji ( /reactions )**\n{usageMessage}", parse_mode="Markdown")
 
-    # Check if the username already has a reaction
+    # Check if the word already has a reaction
     addedUsernames = await checkUsersGroup(chatId)
-    if username in addedUsernames:
-       userData = await checkUserInfo(chatId, username)
-       return await Bot.reply_to(message, f"{username} already has an auto reaction\nReaction: {userData[2]}", parse_mode="Markdown")
-
-    # Save the reaction
-    await saveReaction(chatId, username, reaction)
+    if word in addedUsernames:
+       userData = await checkUserInfo(chatId, word)
+       if word.startswith("@"):
+         return await Bot.reply_to(message, f"{word} already has an auto reaction\nReaction: {userData[2]}", parse_mode="Markdown")
+       else:
+         return await Bot.reply_to(message, f"\"*{word}*\" word already has an auto reaction\nReaction: {userData[2]}", parse_mode="Markdown")
+    
+    # Save the Reaction
+    await saveReaction(chatId, word, reaction)
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(text=f"Edit {username}",callback_data=f"Edit:{username}:-1"))
-    await Bot.reply_to(message, f"Reaction for {username} with {reaction} added successfully!\n\n" + "```\n/edit @Username {newReaction [leave blank for settings panel]}```",parse_mode="Markdown",reply_markup=markup)
+    markup.add(types.InlineKeyboardButton(text=f"Edit {word}",callback_data=f"Edit:{word}:-1"))
+    return await Bot.reply_to(message, f"Reaction for `{word}` with {reaction} added successfully\n\n" + "```\n/edit Text {newReaction [leave blank for settings panel]}```",parse_mode="Markdown",reply_markup=markup)
 
 async def saveReaction(chatId, username, reaction):
     """Saves the reaction configuration to the database."""
     query = """
     INSERT INTO `Groups` 
-    (`chatId`, `Username`, `Reaction`, `mentionReaction`, `mentionReactionBig`, `replyReaction`, `replyReactionBig`) 
+    (`chatId`, `Word`, `Reaction`, `mentionReaction`, `mentionReactionBig`, `replyReaction`, `replyReactionBig`) 
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """
     async with aiosqlite.connect('Database.db') as db:

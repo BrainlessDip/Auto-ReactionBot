@@ -1,5 +1,5 @@
 CREATE TABLE `Groups` (`chatId` INTEGER,
-`Username` TEXT,
+`Word` TEXT,
 `Reaction` TEXT,
 `mentionReaction` INTEGER,
 `mentionReactionBig` INTEGER,

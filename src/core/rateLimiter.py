@@ -12,7 +12,7 @@ Interactions = defaultdict(list)
 
 # Rate limit configuration
 RATE_LIMIT = 1  # Maximum allowed interactions
-TIME_WINDOW = 0  # Time window in seconds
+TIME_WINDOW = 1  # Time window in seconds
 
 # Rate limit decorator for callback queries
 def rateLimiterCallback(callback):

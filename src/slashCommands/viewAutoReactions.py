@@ -20,15 +20,15 @@ async def sendPage(message, reactions, page, isEdit=False,userId=0):
         text = "No reactions found"
     else:
         formattedReactions = "\n\n".join(
-            [f"🧑‍💻 {user} {reaction}\n➡️ Mention : {'✅' if mentionReaction else '❌'} | Reply : {'✅' if replyReaction else '❌'}"
-             for user, reaction, mentionReaction, replyReaction in reactionsToShow])
-        text = f"Auto Reactions for this group (Page {page + 1})\n{formattedReactions}"
+            [f"{'🧑‍💻' if word.startswith('@') else '🔠'} {word} • {reaction}\n➡️ Mention : {'✅' if mentionReaction else '❌'} | Reply : {'✅' if replyReaction else '❌'}"
+             for word, reaction, mentionReaction, replyReaction in reactionsToShow])
+        text = f"Auto Reactions for this group\nPage: {page + 1}\n\n{formattedReactions}"
 
     markup = types.InlineKeyboardMarkup(row_width=5)
-    usersButtons = []
-    for user, reaction, mentionReaction, replyReaction in reactionsToShow:
-      usersButtons.append(types.InlineKeyboardButton(text=f"{user}",callback_data=f"Edit:{user}:{page}"))
-    markup.add(*usersButtons)
+    wordsButtons = []
+    for word, reaction, mentionReaction, replyReaction in reactionsToShow:
+      wordsButtons.append(types.InlineKeyboardButton(text=f"{word}",callback_data=f"Edit:{word}:{page}"))
+    markup.add(*wordsButtons)
     # Create previous and next buttons
     buttons = []
     if page > 0:
@@ -129,7 +129,7 @@ async def handlePagination(call):
 @rateLimiterCallback
 async def handleEdit(call):
    chatId = call.message.chat.id 
-   username = call.data.split(':')[1]
+   word = call.data.split(':')[1]
    
    if call.message.reply_to_message:
      userId = call.message.reply_to_message.from_user.id
@@ -140,4 +140,4 @@ async def handleEdit(call):
    if int(userId) != call.from_user.id:
      return await Bot.answer_callback_query(call.id, "You cannot interact with this button", show_alert=True)
    else:
-     await slashCommands.sendReactionPanel(call.message,chatId,username,userId,IsEdit=True,Page=Page)
+     await slashCommands.sendReactionPanel(call.message,chatId,word,userId,IsEdit=True,Page=Page)

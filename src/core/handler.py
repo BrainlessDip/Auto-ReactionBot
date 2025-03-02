@@ -10,9 +10,9 @@ def isNotCommand(message):
     messageText = message.text if message.content_type == "text" else message.caption
     return not messageText or not messageText.startswith('/')
 
-async def handleReaction(chatId, messageId, username, mode):
+async def handleReaction(chatId, messageId, word, mode):
     """Handle setting message reactions based on user data."""
-    userData = await checkUserInfo(chatId, username)
+    userData = await checkUserInfo(chatId, word)
     if not userData:
         return
 
@@ -48,15 +48,15 @@ async def processText(message):
     messageText = "None" if messageText is None else messageText
 
     chatId = message.chat.id
-    reactionUsernames = await checkUsersGroup(chatId)
+    reactionWords = await checkUsersGroup(chatId)
 
     # Check for direct mention in the message
-    firstTriggered = next((username for username in messageText.split() if username in reactionUsernames), None)
+    firstTriggered = next((word for word in messageText.split() if word in reactionWords), None)
     if firstTriggered:
        await handleReaction(chatId, message.message_id, firstTriggered,'mention')
 
-    # Check for replies to users in reactionUsernames
+    # Check for replies to users in reactionWords
     elif getattr(message.reply_to_message, 'from_user', None):
-        username = f"@{message.reply_to_message.from_user.username}"
-        if username in reactionUsernames:
-           await handleReaction(chatId, message.message_id, username,'reply')
+        word = f"@{message.reply_to_message.from_user.username}"
+        if word in reactionWords:
+           await handleReaction(chatId, message.message_id, word,'reply')

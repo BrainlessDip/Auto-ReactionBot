@@ -28,32 +28,28 @@ async def deleteReactionHandler(message):
     usageMessage = ("Usage\n```Non-Reply\n/delete @Username\n```\n"
                     "```Reply\n/delete\n```")
 
-    # Determine username based on arguments or reply
-    username = None
+    # Determine word based on arguments or reply
+    word = None
     if message.reply_to_message:
-        # Extract username from the replied message
+        # Extract word from the replied message
         repliedUser = message.reply_to_message.from_user
         if not repliedUser or repliedUser.is_bot:
             return await Bot.reply_to(message, f"*You can't delete a reaction for a bot*\n{usageMessage}", parse_mode="Markdown")
-        username = f"@{repliedUser.username}" if repliedUser.username else None
+        word = f"@{repliedUser.username}" if repliedUser.username else None
     elif len(args) >= 1:
-        # Extract username from the command arguments
-        username = args[0]
-
-    # Validate inputs
-    if not username or not username.startswith("@"):
-        return await Bot.reply_to(message, f"*Enter a valid username*\n{usageMessage}", parse_mode="Markdown")
-
+        # Extract word from the command arguments
+        word = args[0]
+    
     # Check if the username already has a reaction
-    users_with_reactions = await checkUsersGroup(chatId)
-    if username in users_with_reactions:
-        await deleteReaction(chatId, username)
-        await Bot.reply_to(message, f"Reaction for {username} deleted successfully!", parse_mode="Markdown")
+    usersWithReactions = await checkUsersGroup(chatId)
+    if word in usersWithReactions:
+        await deleteReaction(chatId, word)
+        await Bot.reply_to(message, f"Reaction for `{word}` deleted successfully!", parse_mode="Markdown")
     else:
-        return await Bot.reply_to(message, f"{username} doesn't have any auto reaction", parse_mode="Markdown")
+        return await Bot.reply_to(message, f"`{word}` doesn't have any auto reaction", parse_mode="Markdown")
 
-async def deleteReaction(chatId, username):
+async def deleteReaction(chatId, word):
     """Deletes the reaction configuration from the database."""
     async with aiosqlite.connect('Database.db') as db:
-        await db.execute("DELETE FROM `Groups` WHERE `chatId` = ? AND `Username` = ?", (chatId, username))
+        await db.execute("DELETE FROM `Groups` WHERE `chatId` = ? AND `Word` = ?", (chatId, word))
         await db.commit()
