@@ -14,8 +14,8 @@ async def Start(message):
 Welcome to Auto Reaction Bot! 🤖
 
 🌟 *Features:*
-- *Mention Reaction:* Experience instant reactions when mentioning a triggered user
-- *Reply Trigger:* Set a specific user for automatic reply reactions
+- *Mention Reaction:* Experience instant reactions when sending a triggered word
+- *Reply Trigger:* Set a specific word for automatic reply reactions
 
 🔧 *Customize:*
 - Desire personalized reactions? Simply let me know!
