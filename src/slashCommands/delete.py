@@ -7,6 +7,7 @@ from src.core.Database import checkUsersGroup, checkUserInfo
 
 logging.info(f"Added {__name__}")
 
+
 @Bot.message_handler(commands=['delete', 'del'])
 @rateLimiterMessage
 async def deleteReactionHandler(message):
@@ -39,7 +40,9 @@ async def deleteReactionHandler(message):
     elif len(args) >= 1:
         # Extract word from the command arguments
         word = args[0]
-    
+    # check if the word is valid.
+    if not word:
+        return await Bot.reply_to(message, "No username was provided. Please provide a username or reply to user text.", parse_mode="Markdown")
     # Check if the username already has a reaction
     usersWithReactions = await checkUsersGroup(chatId)
     if word in usersWithReactions:
@@ -47,6 +50,7 @@ async def deleteReactionHandler(message):
         await Bot.reply_to(message, f"Reaction for `{word}` deleted successfully!", parse_mode="Markdown")
     else:
         return await Bot.reply_to(message, f"`{word}` doesn't have any auto reaction", parse_mode="Markdown")
+
 
 async def deleteReaction(chatId, word):
     """Deletes the reaction configuration from the database."""
