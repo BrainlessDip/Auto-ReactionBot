@@ -20,7 +20,7 @@ async def sendPage(message, reactions, page, isEdit=False,userId=0):
         text = "No reactions found"
     else:
         formattedReactions = "\n\n".join(
-            [f"{'🧑‍💻' if word.startswith('@') else '🔠'} {word} • {reaction}\n➡️ Mention : {'✅' if mentionReaction else '❌'} | Reply : {'✅' if replyReaction else '❌'}"
+            [f"{'🧑‍💻' if word.startswith('@') else '🔠'} `{word}` • {reaction}\n➡️ Mention : {'✅' if mentionReaction else '❌'} | Reply : {'✅' if replyReaction else '❌'}"
              for word, reaction, mentionReaction, replyReaction in reactionsToShow])
         text = f"Auto Reactions for this group\nPage: {page + 1}\n\n{formattedReactions}"
 
@@ -49,10 +49,11 @@ async def sendPage(message, reactions, page, isEdit=False,userId=0):
             text,
             chat_id=message.chat.id,
             message_id=message.message_id,
-            reply_markup=markup
+            reply_markup=markup,
+            parse_mode="Markdown"
         )
     else:
-        await Bot.reply_to(message, text, reply_markup=markup)
+        await Bot.reply_to(message, text, reply_markup=markup,parse_mode="Markdown")
 
 # Generate a list of page buttons for the user to choose from
 async def generatePageButtons(reactions, current_page,userId):

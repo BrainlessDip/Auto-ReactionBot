@@ -11,18 +11,19 @@ logging.info(f"Added {__name__}")
 @rateLimiterMessage
 async def Start(message):
    text = """
-Welcome to Auto Reaction Bot! 🤖
+Welcome to the Auto Reaction Bot! 🤖
 
 🌟 *Features:*
-- *Mention Reaction:* Experience instant reactions when sending a triggered word
-- *Reply Trigger:* Set a specific word for automatic reply reactions
+- *Mention Reactions:* Instantly trigger a reaction when a specific word or user is mentioned
+- *Reply Triggers:* Instantly trigger a reaction when replying to a specific user
 
-🔧 *Customize:*
-- Desire personalized reactions? Simply let me know!
+🔧 *Customization:*
+- Personalize reaction for each word or user — pretty cool, right?
 
-Begin chatting and enjoy the cascade of reactions! 🚀
-/help ? 
-   """
+Start chatting and watch the reaction roll in! 🚀  
+Type /help to learn how to use the bot
+"""
+
    keyboard = types.InlineKeyboardMarkup()
    join_button = types.InlineKeyboardButton(text="Join Support Chat", url="https://t.me/AutoReactionSupport")
    keyboard.add(join_button)
